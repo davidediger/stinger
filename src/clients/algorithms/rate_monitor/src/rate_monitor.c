@@ -9,20 +9,22 @@
 #include "stinger_utils/timer.h"
 
 void
-update_rates(stinger_registered_alg * a, int64_t nv, double * vel, double * accel, double vel_keep, double accel_keep)
+update_rates(stinger_registered_alg * a, int64_t nv, double * vel, double * accel, double vel_keep, double accel_keep, int64_t * count)
 {
-  int64_t * count = xcalloc(nv, sizeof(int64_t));
-
+  OMP("omp parallel for")
+  for(int64_t i = 0; i < nv; i++) {
+    count[i] = 0;
+  }
   OMP("omp parallel for")
   for(int64_t i = 0; i < a->num_insertions; i++) {
-    stinger_int64_fetch_add(count + a->insertions[i].source,1);
-    stinger_int64_fetch_add(count + a->insertions[i].destination,1);
+    stinger_int64_fetch_add(&count[a->insertions[i].source], 1);
+    stinger_int64_fetch_add(&count[a->insertions[i].destination] ,1);
   }
 
   OMP("omp parallel for")
   for(int64_t i = 0; i < a->num_deletions; i++) {
-    stinger_int64_fetch_add(count + a->deletions[i].source,1);
-    stinger_int64_fetch_add(count + a->deletions[i].destination,1);
+    stinger_int64_fetch_add(&count[a->deletions[i].source], 1);
+    stinger_int64_fetch_add(&count[a->deletions[i].destination], 1);
   }
 
   OMP("omp parallel for")
@@ -30,8 +32,6 @@ update_rates(stinger_registered_alg * a, int64_t nv, double * vel, double * acce
     accel[v] = (accel_keep * accel[v]) + (1 - accel_keep) * (count[v] - vel[v]);
     vel[v] = (vel_keep * vel[v]) + (1 - vel_keep) * count[v];
   }
-
-  free(count);
 }
 
 int
@@ -61,6 +61,8 @@ main(int argc, char *argv[])
   double * accel  = vel + alg->stinger->max_nv;
   double time;
 
+  int64_t * count = xmalloc (alg->stinger->max_nv * sizeof(int64_t));
+
   
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Initial static computation
@@ -81,7 +83,7 @@ main(int argc, char *argv[])
     /* Post processing */
     if(stinger_alg_begin_post(alg)) {
       time = timer();
-      update_rates(alg, alg->stinger->max_nv, vel, accel, vel_keep, accel_keep);
+      update_rates(alg, alg->stinger->max_nv, vel, accel, vel_keep, accel_keep, count);
       time = timer() - time;
       LOG_I_A("Update time : %20.15e sec", time);
       stinger_alg_end_post(alg);
@@ -89,5 +91,6 @@ main(int argc, char *argv[])
   }
 
   LOG_I("Algorithm complete... shutting down");
+  xfree(count);
   xfree(alg);
 }
