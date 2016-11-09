@@ -129,6 +129,7 @@ struct stinger
   uint64_t num_deletions;
   uint64_t num_insertions_last_batch;
   uint64_t num_deletions_last_batch;
+  uint64_t time_start;
 
   double batch_time;
   double update_time;
@@ -145,7 +146,7 @@ struct stinger
   uint64_t ebpool_start;
   size_t length;
 
-  uint64_t cache_pad[5]; /* Force storage[0] to be cache-block aligned */
+  uint64_t cache_pad[4]; /* Force storage[0] to be cache-block aligned */
 
   uint8_t storage[0];
 };

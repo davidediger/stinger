@@ -286,5 +286,10 @@ get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson:
   uptime.SetInt64(t);
   result.AddMember("uptime", uptime, allocator);
 
+  stinger_t * S = server_state.get_stinger();
+  rapidjson::Value time_start;
+  time_start.SetInt64(S->time_start);
+  result.AddMember("time_start", time_start, allocator);
+
   return 0;
 }

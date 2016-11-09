@@ -357,6 +357,9 @@ int main(int argc, char *argv[])
   }
   xfree(stinger_config);
 
+  /* set the server start time */
+  S->time_start = time(NULL);
+
 
   LOG_V("Graph created. Running stats...");
   tic();
