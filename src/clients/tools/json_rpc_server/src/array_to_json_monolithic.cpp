@@ -13,17 +13,27 @@ using namespace gt::stinger;
 template <typename T>
 inline int64_t* new_sorted_data_idx(T* data, int64_t nv, bool asc) {
   int64_t * idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+  T * tmp_data = (T *) xmalloc (nv * sizeof(T));
+
+  // make a temporary copy of the data
+  for (int64_t i = 0; i < nv; i++) {
+    tmp_data[i] = data[i];
+  }
+
   for (int64_t i = 0; i < nv; i++) {
     idx[i] = i;
   }
 
   if (asc) {
-    compare_pair_asc<T> comparator(data);
+    compare_pair_asc<T> comparator(tmp_data);
     std::sort(idx, idx + nv, comparator);
   } else {
-    compare_pair_desc<T> comparator(data);
+    compare_pair_desc<T> comparator(tmp_data);
     std::sort(idx, idx + nv, comparator);
   }
+
+  // don't need this anymore -- was only to provide isolation during sort
+  free (tmp_data);
 
   return idx;
 }
@@ -31,18 +41,28 @@ inline int64_t* new_sorted_data_idx(T* data, int64_t nv, bool asc) {
 template <typename T>
 inline int64_t* new_sorted_data_idx(T* data_start, int64_t nv, bool asc, int64_t data_byte_offset) {
   int64_t * idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+  T * tmp_data_start = (T *) xmalloc (nv * sizeof(T));
+
+  // make a temporary copy of the data
+  for (int64_t i = 0; i < nv; i++) {
+    tmp_data_start[i] = data_start[i];
+  }
+
   for (int64_t i = 0; i < nv; i++) {
     idx[i] = i;
   }
 
   if (asc) {
-    compare_pair_off_asc<T> comparator(data_start, data_byte_offset);
+    compare_pair_off_asc<T> comparator(tmp_data_start, data_byte_offset);
     std::sort(idx, idx + nv, comparator);
   } else {
-    compare_pair_off_desc<T> comparator(data_start, data_byte_offset);
+    compare_pair_off_desc<T> comparator(tmp_data_start, data_byte_offset);
     std::sort(idx, idx + nv, comparator);
   }
 
+  // don't need this anymore -- was only to provide isolation during sort
+  free (tmp_data_start);
+  
   return idx;
 }
 
